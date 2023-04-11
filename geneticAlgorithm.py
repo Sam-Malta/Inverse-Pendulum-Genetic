@@ -104,8 +104,8 @@ class genetic:
                     individual.setFitness(fitness)
                     # if observation[0] < 0:
                     #     break                
-            bestPerformers = sorted(self.population, key=lambda x: x.getAverageFitness(), reverse=True)[:int(10)]
-            self.fitnessHistory.append(bestPerformers[0].getAverageFitness())
+            bestPerformers = sorted(self.population, key=lambda x: x.getFitness(), reverse=True)[:int(10)]
+            self.fitnessHistory.append(bestPerformers[0].getFitness())
             self.crossover(bestPerformers)
             self.mutatePopulation()
             #self.addBestPerformers(bestPerformers)
@@ -139,8 +139,8 @@ class individual:
         self.fitness = fitness
         self.fitnessHistory.append(fitness)
 
-    def getAverageFitness(self):
-        return np.average(np.asarray(self.fitnessHistory))
+    def getFitness(self):
+        return np.sum(np.asarray(self.fitnessHistory))
     
     def mutate(self):
         newWeights = []
