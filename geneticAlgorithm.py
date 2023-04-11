@@ -15,11 +15,12 @@ class genetic:
         self.numberSteps = numberSteps
 
         self.inputSize = 3
-        self.hiddenSize = 6
-        self.numberHiddenLayers = 3
+        self.hiddenSize = 24
+        self.numberHiddenLayers = 2
         self.outputSize = 1
         self.population = self.createRandPopulation()
 
+        self.bestPerformers = []
         self.fitnessHistory = []
         
         
@@ -28,14 +29,16 @@ class genetic:
     def createRandWeights(self):
         # Randomly initialize weights between -1 and 1
         weights = []
-        for i in range(self.numberHiddenLayers - 1):
+        for i in range(self.numberHiddenLayers + 1):
             if i == 0:
                 weights.append(np.random.uniform(-1, 1, size=(self.inputSize, self.hiddenSize)))
-            elif i == self.numberHiddenLayers - 1:
+            elif i == self.numberHiddenLayers:
                 weights.append(np.random.uniform(-1, 1, size=(self.hiddenSize, self.outputSize)))
             else:
                 weights.append(np.random.uniform(-1, 1, size=(self.hiddenSize, self.hiddenSize)))
 
+        
+        
         return weights
     
     def createRandPopulation(self):
@@ -71,8 +74,10 @@ class genetic:
         return data[abs(data - np.mean(data)) < m * np.std(data)]
     
     def saveModel(self):
-        for i, weight in enumerate(self.population[0].weights):
-            np.save(f'w{i}.npy', self.population[0].weights[0])
+        if len(self.bestPerformers) == 0:
+            return
+        for i, weight in enumerate(self.bestPerformers[0].weights):
+            np.save(f'w{i}.npy', self.bestPerformers[0].weights[0])
         np.savetxt('data.csv', self.fitnessHistory, delimiter=',')
         
         #data = self.rejectOutliers(np.asarray(self.fitnessHistory))
@@ -91,11 +96,11 @@ class genetic:
         for i in range(self.populationSize):
             self.population.append(individual(weights, self.mutationRate))
     
-    def run(self):
+    def run(self, seed):
         self.fitnessHistory = []
         for gen in tqdm(range(self.generations)):
             for individual in self.population:
-                initialObs, info = self.env.reset(seed=100) # Seed remains constant so that the same initial observation is used for each individual
+                initialObs, info = self.env.reset(seed=seed) # Seed remains constant so that the same initial observation is used for each individual
                 net = nn.nn(individual.weights)
                 observation = initialObs
                 for i in (range(self.numberSteps)):
@@ -104,9 +109,9 @@ class genetic:
                     individual.setFitness(fitness)
                     # if observation[0] < 0:
                     #     break                
-            bestPerformers = sorted(self.population, key=lambda x: x.getFitness(), reverse=True)[:int(10)]
-            self.fitnessHistory.append(bestPerformers[0].getFitness())
-            self.crossover(bestPerformers)
+            self.bestPerformers = sorted(self.population, key=lambda x: x.getFitness(), reverse=True)[:int(2)]
+            self.fitnessHistory.append(self.bestPerformers[0].getFitness())
+            self.crossover(self.bestPerformers)
             self.mutatePopulation()
             #self.addBestPerformers(bestPerformers)
 
@@ -140,7 +145,7 @@ class individual:
         self.fitnessHistory.append(fitness)
 
     def getFitness(self):
-        return np.sum(np.asarray(self.fitnessHistory))
+        return np.average(np.asarray(self.fitnessHistory))
     
     def mutate(self):
         newWeights = []
