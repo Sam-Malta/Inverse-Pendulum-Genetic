@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import nn
+import pickle
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
@@ -16,7 +17,7 @@ class genetic:
 
         self.inputSize = 3
         self.hiddenSize = 24
-        self.numberHiddenLayers = 2
+        self.numberHiddenLayers = 3
         self.outputSize = 1
         self.population = self.createRandPopulation()
 
@@ -75,9 +76,12 @@ class genetic:
     
     def saveModel(self):
         if len(self.bestPerformers) == 0:
+            print("there are no best performers to save")
             return
-        for i, weight in enumerate(self.bestPerformers[0].weights):
-            np.save(f'w{i}.npy', self.bestPerformers[0].weights[0])
+        
+        with open("weights.pkl", 'wb') as f:
+            pickle.dump(self.bestPerformers[0].weights, f)
+        #np.save('weights.npy', self.bestPerformers[0].weights)
         np.savetxt('data.csv', self.fitnessHistory, delimiter=',')
         
         #data = self.rejectOutliers(np.asarray(self.fitnessHistory))
@@ -85,16 +89,25 @@ class genetic:
         plt.plot(self.fitnessHistory)
         plt.savefig('fitnessHistory.png')
     
-    def loadModel(self, layers):
+    def loadModel(self, path):
         weights = []
-        for i in range(layers):
-            weights.append(np.load(f'w{i}.npy'))
-            print(f'Loaded {i+1} layers')
-        
-        if len(self.population) == 0:
-            self.population = []
-        for i in range(self.populationSize):
-            self.population.append(individual(weights, self.mutationRate))
+        if path is not None:
+            with open(f'{path}/weights.pkl', 'rb') as f:
+                weights = pickle.load(f)
+
+            for i in range(len(weights)):
+                print(np.asarray(weights[i]).shape)
+
+            if len(self.population) == 0:
+                for i in range(self.populationSize):
+                    self.population.append(individual(weights, self.mutationRate))
+            else:
+                for individual in self.population:
+                    individual.weights = weights
+
+            print('Model loaded successfully')
+        else:
+            print('No path specified')
     
     def run(self, seed):
         self.fitnessHistory = []
@@ -106,7 +119,7 @@ class genetic:
                 for i in (range(self.numberSteps)):
                     nextStep = net(observation)[0]
                     observation, fitness, term, trun, info = self.env.step(nextStep)
-                    individual.setFitness(fitness)
+                    individual.setFitness(observation)
                     # if observation[0] < 0:
                     #     break                
             self.bestPerformers = sorted(self.population, key=lambda x: x.getFitness(), reverse=True)[:int(2)]
@@ -121,7 +134,6 @@ class genetic:
         observation = initialObs
         for i in (range(numberSteps)):
             nextStep = net(observation)[0]
-            print(nextStep)
             observation, fitness, term, trun, info = self.env.step(nextStep)
             self.env.step(nextStep)
             self.env.render()
@@ -140,9 +152,12 @@ class individual:
         self.mutationRate = mutationRate
         self.fitnessHistory = []
 
-    def setFitness(self, fitness):
-        self.fitness = fitness
-        self.fitnessHistory.append(fitness)
+    def setFitness(self, observation):
+        angle = abs(observation[0])
+        angular_velocity = observation[2]
+        reward = -angle + 0.1*abs(angular_velocity)
+        
+        return reward
 
     def getFitness(self):
         return np.average(np.asarray(self.fitnessHistory))
