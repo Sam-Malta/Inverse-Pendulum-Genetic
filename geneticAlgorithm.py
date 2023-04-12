@@ -16,8 +16,8 @@ class genetic:
         self.numberSteps = numberSteps
 
         self.inputSize = 3
-        self.hiddenSize = 24
-        self.numberHiddenLayers = 3
+        self.hiddenSize = 12
+        self.numberHiddenLayers = 2
         self.outputSize = 1
         self.population = self.createRandPopulation()
 
@@ -155,8 +155,13 @@ class individual:
     def setFitness(self, observation):
         angle = abs(observation[0])
         angular_velocity = observation[2]
-        reward = -angle + 0.1*abs(angular_velocity)
+        reward = -angle - (.1 * abs(angular_velocity))
         
+        # Option 2: add a time penalty
+        if angle > 0.2:
+            reward -= 0.1
+        
+        self.fitnessHistory.append(reward)
         return reward
 
     def getFitness(self):
