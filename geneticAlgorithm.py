@@ -82,10 +82,9 @@ class genetic:
         with open("weights.pkl", 'wb') as f:
             pickle.dump(self.bestPerformers[0].weights, f)
         #np.save('weights.npy', self.bestPerformers[0].weights)
-        np.savetxt('data.csv', self.fitnessHistory, delimiter=',')
+        np.savetxt('data1.csv', self.fitnessHistory, delimiter=',')
         
         #data = self.rejectOutliers(np.asarray(self.fitnessHistory))
-        self.fitnessHistory.pop(0)
         plt.plot(self.fitnessHistory)
         plt.savefig('fitnessHistory.png')
     
@@ -119,10 +118,10 @@ class genetic:
                 for i in (range(self.numberSteps)):
                     nextStep = net(observation)[0]
                     observation, fitness, term, trun, info = self.env.step(nextStep)
-                    individual.setFitness(observation)
+                    individual.setFitness(observation, fitness)
                     # if observation[0] < 0:
                     #     break                
-            self.bestPerformers = sorted(self.population, key=lambda x: x.getFitness(), reverse=True)[:int(2)]
+            self.bestPerformers = sorted(self.population, key=lambda x: x.getFitness(), reverse=True)[:int(20)]
             self.fitnessHistory.append(self.bestPerformers[0].getFitness())
             self.crossover(self.bestPerformers)
             self.mutatePopulation()
@@ -152,17 +151,17 @@ class individual:
         self.mutationRate = mutationRate
         self.fitnessHistory = []
 
-    def setFitness(self, observation):
-        angle = abs(observation[0])
-        angular_velocity = observation[2]
-        reward = -angle - (.1 * abs(angular_velocity))
+    def setFitness(self, observation, fitness):
+        # angle = abs(observation[0])
+        # angular_velocity = observation[2]
+        # reward = -angle - abs(angular_velocity)*.15
         
-        # Option 2: add a time penalty
-        if angle > 0.2:
-            reward -= 0.1
+        # # Option 2: add a time penalty
+        # if angle > 0.15:
+        #     reward -= 0.45
         
-        self.fitnessHistory.append(reward)
-        return reward
+        self.fitnessHistory.append(fitness)
+
 
     def getFitness(self):
         return np.average(np.asarray(self.fitnessHistory))
