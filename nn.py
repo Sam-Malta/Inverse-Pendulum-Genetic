@@ -6,8 +6,8 @@ class nn:
         self.inputSize = 3
 
         # Define hidden layer size
-        self.hiddenSize = 24
-        self.numberHiddenLayers = 3
+        self.hiddenSize = 12
+        self.numberHiddenLayers = 2
 
         # Define output layer size
         self.outputSize = 1
